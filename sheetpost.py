@@ -20,15 +20,18 @@ scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
 credentials = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
 
-def authorize_and_create_spreadsheet(sheet_name):
+def authorize_and_get_spreadsheet(sheet_name):
     try:
         gc = gspread.authorize(credentials)
-        spread = gc.create(sheet_name)
+        try:
+            spread = gc.open(sheet_name)
+        except gspread.exceptions.SpreadsheetNotFound:
+            print("Creating new spreadsheet", sheet_name)
+            spread = gc.create(sheet_name)
         print("Logged into Sheets!")
     except Exception as e:
         print('Exception\n', e)
         exit("Error logging into Google Sheets. Check your authentication.")
-
     return spread
 
 # Split a string into chunks so we can work around
@@ -79,7 +82,7 @@ def sheetpost_put(worksheet, filename):
         # Add a ' to each line to avoid it being interpreted as a formula
         part = "'" + part
         wks.update_cell(cell, column, part)
-        print("Write:", cell, column)
+        print("Write:", cell, column, "Part:", part[:20])
         cell += 1
 
     print("Cells used:", cell, column)
@@ -156,9 +159,9 @@ To retrieve a sheetpost:
 if __name__ == '__main__':
     file_key = '1MT6l2bMJimjRdtqmZUDs3kOKxoOi3Wca8uB7C11SLDc'
     filename = 'XCHG.jpg'
-    #filename = 'byte_python.pdf'
+    filename = 'learn_py.pdf'
 
-    spreadsheet = authorize_and_create_spreadsheet(filename + '_sheet')
+    spreadsheet = authorize_and_get_spreadsheet(filename + '_sheet')
     worksheet = spreadsheet.sheet1
 
     print("BEGIN FILE PUT")

@@ -60,6 +60,25 @@ def sheetpost_put(worksheet, filename):
     print("Wiping the existing data from the sheet.")
     row_sweep = 1
     column_sweep = 1
+
+    # Increse the range for larger files
+    all_cells = sorted(wks.range('A1:B1000'), key=lambda x: x.col)
+
+    i = 1
+    while True:
+        val = all_cells[i].value
+        if val == '':
+            print("End of original file contents")
+            break
+
+        # Clear cell
+        all_cells[i].value = ''
+        i += 1
+
+    # Update all the cells at once
+    wks.update_cells(sorted(all_cells, key=lambda x: x.row))
+
+    '''
     while wks.cell(row_sweep, column_sweep).value != "":
         if row_sweep == 1000:
             row_sweep = 1
@@ -67,6 +86,7 @@ def sheetpost_put(worksheet, filename):
         wks.update_cell(row_sweep, column_sweep, "")
         print("Wipe:", row_sweep, column_sweep)
         row_sweep += 1
+    '''
 
     # Write the chunks to Drive
     cell = 1
@@ -81,10 +101,14 @@ def sheetpost_put(worksheet, filename):
             column += 1
         # Add a ' to each line to avoid it being interpreted as a formula
         part = "'" + part
-        wks.update_cell(cell, column, part)
+        # wks.update_cell(cell, column, part)
+        all_cells[cell + (column-1) * 1000].value = part
+        # Calculating index of cell
         print("Write:", cell, column, "Part:", part[:20])
         cell += 1
 
+    # Update the edited cells
+    wks.update_cells(all_cells)
     print("Cells used:", cell, column)
 
     # Delete the UU-encoded file
@@ -108,8 +132,8 @@ def sheetpost_get(worksheet, filename):
 
     # Trim out the extra single quotes
     while True:
-        print("Trim:", row_sweep, column_sweep)
         val = wks.cell(row_sweep, column_sweep).value
+        print("Trim:", row_sweep, column_sweep, "Value:", val[:20])
 
         if val == '':
             print('Break:', row_sweep, column_sweep)
@@ -125,6 +149,7 @@ def sheetpost_get(worksheet, filename):
                 # dont trim for cell,col == 1,1
                 # Trim initial "'", put in there while writing
                 value = value[1:]
+            print('After Trim:', value[:20])
             values_final += value
         column_sweep += 1
     values_final = "".join(values_final)
@@ -159,7 +184,7 @@ To retrieve a sheetpost:
 if __name__ == '__main__':
     file_key = '1MT6l2bMJimjRdtqmZUDs3kOKxoOi3Wca8uB7C11SLDc'
     filename = 'XCHG.jpg'
-    filename = 'learn_py.pdf'
+    #filename = 'learn_py.pdf'
 
     spreadsheet = authorize_and_get_spreadsheet(filename + '_sheet')
     worksheet = spreadsheet.sheet1

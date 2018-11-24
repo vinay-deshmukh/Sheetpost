@@ -56,6 +56,7 @@ def sheetpost_put(sheet_id, filename):
             row_sweep = 1
             column_sweep += 1
         wks.update_cell(row_sweep, column_sweep, "")
+        print("Wipe:", row_sweep, column_sweep)
         row_sweep += 1
 
     # Write the chunks to Drive
@@ -72,7 +73,10 @@ def sheetpost_put(sheet_id, filename):
         # Add a ' to each line to avoid it being interpreted as a formula
         part = "'" + part
         wks.update_cell(cell, column, part)
+        print("Write:", cell, column)
         cell += 1
+
+    print("Cells used:", cell, column)
 
     # Delete the UU-encoded file
     remove(filename + ".out")
@@ -101,15 +105,26 @@ def sheetpost_get(sheet_id, filename):
     values_final = []
 
     # Trim out the extra single quotes
-    while wks.cell(row_sweep, column_sweep).value != "":
-        print("Cell: ", row_sweep, column_sweep)
+    while True:
+        print("Trim:", row_sweep, column_sweep)
+        val = wks.cell(row_sweep, column_sweep).value
+
+        if val == '':
+            print('Break:', row_sweep, column_sweep)
+            break
+
         values_list = wks.col_values(column_sweep)
         for value in values_list:
-            if row_sweep > 1:
-                value = value[1:]
+            if value == '':
+                print("End reading")
+                break
+
+            #if row_sweep > 1:
+            # Trim initial "'", put in there while writing
+            value = value[1:]
             values_final += value
-            column_sweep += 1
-        values_final = "".join(values_final)
+        column_sweep += 1
+    values_final = "".join(values_final)
 
     # Save to file
     with open(downfile, "w+") as recoverfile:
@@ -137,6 +152,22 @@ To retrieve a sheetpost:
 # -------------------------------------------------------]]
 # Where the magic happens!
 # -------------------------------------------------------]]
+
+if __name__ == '__main__':
+    file_key = '1MT6l2bMJimjRdtqmZUDs3kOKxoOi3Wca8uB7C11SLDc'
+    filename = 'XCHG.jpg'
+    #filename = 'byte_python.pdf'
+
+    print("BEGIN FILE PUT")
+    sheetpost_put(file_key, filename)
+    print("END FILE PUT")
+
+    print("BEGIN FILE GET")
+    sheetpost_get(file_key, filename.replace('.', '_retrieved.'))
+    print("END FILE GET")
+    exit('End main')
+
+
 if argv[0] == 'python':
     # if windows user
     argv = argv[1:]
@@ -158,3 +189,5 @@ else:
     print("Unknown operation (accepts either 'get' or 'put')")
     exit(help_message)
 print("End of program")
+
+

@@ -34,21 +34,21 @@ def sheetpost_put(sheet_id, filename):
     try:
         gc = gspread.authorize(credentials)
         wks = gc.open_by_key(sheet_id).sheet1
-        print "Logged into Sheets!"
+        print("Logged into Sheets!")
     except Exception:
         exit("Error logging into Google Sheets. Check your authentication.")
 
     # UU-encode the source file
     uu.encode(filename, filename + ".out")
 
-    print "Encoded file into uu format!"
+    print("Encoded file into uu format!")
 
     with open(filename + ".out", "rb") as uploadfile:
         encoded = uploadfile.read()
     uploadfile.close()
 
     # Wipe the sheet of existing content.
-    print "Wiping the existing data from the sheet."
+    print("Wiping the existing data from the sheet.")
     row_sweep = 1
     column_sweep = 1
     while wks.cell(row_sweep, column_sweep).value != "":
@@ -63,10 +63,10 @@ def sheetpost_put(sheet_id, filename):
     column = 1
     chunk = chunk_str(encoded, 49500)
 
-    print "Writing the chunks to the sheet. This'll take a while. Get some coffee or something."
+    print("Writing the chunks to the sheet. This'll take a while. Get some coffee or something.")
     for part in chunk:
         if cell == 1000:
-            print "Ran out of rows, adding a column."
+            print("Ran out of rows, adding a column.")
             cell = 1
             column += 1
         # Add a ' to each line to avoid it being interpreted as a formula
@@ -76,7 +76,7 @@ def sheetpost_put(sheet_id, filename):
 
     # Delete the UU-encoded file
     remove(filename + ".out")
-    print "All done! " + str(cell) + " cells filled in Sheets."
+    print("All done! " + str(cell) + " cells filled in Sheets.")
 
 
 # DOWNLOAD
@@ -90,7 +90,7 @@ def sheetpost_get(sheet_id, filename):
     try:
         gc = gspread.authorize(credentials)
         wks = gc.open_by_key(sheet_id).sheet1
-        print "Logged into Sheets! Downloading the UU spaghetti. This might take a bit."
+        print("Logged into Sheets! Downloading the UU spaghetti. This might take a bit.")
     except Exception:
         exit("Error logging into Google Sheets.\n Check your authentication and make sure you gave it a "
              "sheetpost to work with.")
@@ -115,10 +115,10 @@ def sheetpost_get(sheet_id, filename):
         recoverfile.write(values_final)
     recoverfile.close()
 
-    print "Saved Sheets data to decode! Decoding now. Beep boop."
+    print("Saved Sheets data to decode! Decoding now. Beep boop.")
     uu.decode(downfile, filename)
     remove(downfile)
-    print "Data decoded! All done!"
+    print("Data decoded! All done!")
 
 
 # HELP
@@ -137,7 +137,7 @@ To retrieve a sheetpost:
 # Where the magic happens!
 # -------------------------------------------------------]]
 if len(argv) < 4:
-    print "Too few arguments!"
+    print("Too few arguments!")
     exit(help_message)
 
 sheet_id = str(argv[2])
@@ -150,5 +150,5 @@ elif argv[1] == "get":
     sheetpost_get(sheet_id, filename)
 
 else:
-    print "Unknown operation (accepts either 'get' or 'put')"
+    print("Unknown operation (accepts either 'get' or 'put')")
     exit(help_message)

@@ -16,9 +16,20 @@ from oauth2client.service_account import ServiceAccountCredentials
 # Insert the path & name of your own .json auth file here.
 # This is the only thing you need to edit in the script itself.
 json_file = 'credentials.json'
-scope = ['https://spreadsheets.google.com/feeds']
+scope = ['https://spreadsheets.google.com/feeds',
+         'https://www.googleapis.com/auth/drive']
 credentials = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
 
+def authorize_and_create_spreadsheet(sheet_name):
+    try:
+        gc = gspread.authorize(credentials)
+        spread = gc.create(sheet_name)
+        print("Logged into Sheets!")
+    except Exception as e:
+        print('Exception\n', e)
+        exit("Error logging into Google Sheets. Check your authentication.")
+
+    return spread
 
 # Split a string into chunks so we can work around
 # the Google Sheets' per-cell value limit.
@@ -30,13 +41,8 @@ def chunk_str(bigchunk, chunk_size):
 # -------------------------------------------------------]]
 # File upload process for 'put'.
 # -------------------------------------------------------]]
-def sheetpost_put(sheet_id, filename):
-    try:
-        gc = gspread.authorize(credentials)
-        wks = gc.open_by_key(sheet_id).sheet1
-        print("Logged into Sheets!")
-    except Exception:
-        exit("Error logging into Google Sheets. Check your authentication.")
+def sheetpost_put(worksheet, filename):
+    wks = worksheet
 
     # UU-encode the source file
     uu.encode(filename, filename + ".out")
@@ -87,17 +93,10 @@ def sheetpost_put(sheet_id, filename):
 # -------------------------------------------------------]]
 # File download process for 'get'.
 # -------------------------------------------------------]]
-def sheetpost_get(sheet_id, filename):
+def sheetpost_get(worksheet, filename):
 
+    wks = worksheet
     downfile = filename + ".uu"
-
-    try:
-        gc = gspread.authorize(credentials)
-        wks = gc.open_by_key(sheet_id).sheet1
-        print("Logged into Sheets! Downloading the UU spaghetti. This might take a bit.")
-    except Exception:
-        exit("Error logging into Google Sheets.\n Check your authentication and make sure you gave it a "
-             "sheetpost to work with.")
 
     row_sweep = 1
     column_sweep = 1
@@ -119,9 +118,10 @@ def sheetpost_get(sheet_id, filename):
                 print("End reading")
                 break
 
-            #if row_sweep > 1:
-            # Trim initial "'", put in there while writing
-            value = value[1:]
+            if row_sweep > 1 and column != 1:
+                # dont trim for cell,col == 1,1
+                # Trim initial "'", put in there while writing
+                value = value[1:]
             values_final += value
         column_sweep += 1
     values_final = "".join(values_final)
@@ -158,12 +158,15 @@ if __name__ == '__main__':
     filename = 'XCHG.jpg'
     #filename = 'byte_python.pdf'
 
+    spreadsheet = authorize_and_create_spreadsheet(filename + '_sheet')
+    worksheet = spreadsheet.sheet1
+
     print("BEGIN FILE PUT")
-    sheetpost_put(file_key, filename)
+    sheetpost_put(worksheet, filename)
     print("END FILE PUT")
 
     print("BEGIN FILE GET")
-    sheetpost_get(file_key, filename.replace('.', '_retrieved.'))
+    sheetpost_get(worksheet, filename.replace('.', '_retrieved.'))
     print("END FILE GET")
     exit('End main')
 

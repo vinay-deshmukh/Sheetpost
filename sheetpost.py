@@ -15,7 +15,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 # Insert the path & name of your own .json auth file here.
 # This is the only thing you need to edit in the script itself.
-json_file = '[your file here].json'
+json_file = 'credentials.json'
 scope = ['https://spreadsheets.google.com/feeds']
 credentials = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
 
@@ -23,7 +23,7 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
 # Split a string into chunks so we can work around
 # the Google Sheets' per-cell value limit.
 def chunk_str(bigchunk, chunk_size):
-    return [bigchunk[i:i + chunk_size] for i in range(0, len(bigchunk), chunk_size)]
+    return (bigchunk[i:i + chunk_size] for i in range(0, len(bigchunk), chunk_size))
 
 
 # UPLOAD
@@ -43,7 +43,7 @@ def sheetpost_put(sheet_id, filename):
 
     print("Encoded file into uu format!")
 
-    with open(filename + ".out", "rb") as uploadfile:
+    with open(filename + ".out", "r") as uploadfile:
         encoded = uploadfile.read()
     uploadfile.close()
 
@@ -102,6 +102,7 @@ def sheetpost_get(sheet_id, filename):
 
     # Trim out the extra single quotes
     while wks.cell(row_sweep, column_sweep).value != "":
+        print("Cell: ", row_sweep, column_sweep)
         values_list = wks.col_values(column_sweep)
         for value in values_list:
             if row_sweep > 1:
@@ -136,6 +137,10 @@ To retrieve a sheetpost:
 # -------------------------------------------------------]]
 # Where the magic happens!
 # -------------------------------------------------------]]
+if argv[0] == 'python':
+    # if windows user
+    argv = argv[1:]
+
 if len(argv) < 4:
     print("Too few arguments!")
     exit(help_message)
@@ -152,3 +157,4 @@ elif argv[1] == "get":
 else:
     print("Unknown operation (accepts either 'get' or 'put')")
     exit(help_message)
+print("End of program")

@@ -68,7 +68,7 @@ def sheetpost_put(worksheet, filename):
     # Increse the range for larger files
     all_cells = sorted(wks.range(WKS_RANGE), key=lambda x: x.col)
 
-    i = 1
+    i = 0
     while True:
         val = all_cells[i].value
         if val == '':
@@ -77,10 +77,21 @@ def sheetpost_put(worksheet, filename):
 
         # Clear cell
         all_cells[i].value = ''
+        print("Wiping:", all_cells[i].row, all_cells[i].col)
         i += 1
-
+    total_wipes = i + 1
     # Update all the cells at once
-    wks.update_cells(all_cells)
+    '''
+    print('Size of value', len(all_cells[0].value))
+    wks.update_acell('A1', all_cells[0].value)
+    print('exit in put')
+    exit('EXIT in put')
+    '''
+
+    cell_chunk = 100 # 100 cells written per call
+    for i in range(0, total_wipes, cell_chunk):
+        print("Wipe:", i, i + cell_chunk)
+        wks.update_cells(all_cells[i: i + cell_chunk])
 
     # Get iterator over the file contents
     # chunk_size should be less than (50000-1)
@@ -104,13 +115,21 @@ def sheetpost_put(worksheet, filename):
         # Using repr so '\n' is shown, and not interpreted as newline
         print("Write:", cell.row, cell.col, "Part:", repr(cell.value[:20]))
         #cell += 1
+    total_cells_written = i + 1
 
     # Update the edited cells
-    wks.update_cells(all_cells)
+    cell_chunk = 100 # Update only 100 cells at a time
+    for i in range(0, total_cells_written, cell_chunk):
+        print("Uploading:", i, i + cell_chunk)
+        first_cell, last_cell = all_cells[i], all_cells[i + cell_chunk]
+        print("Cells:", first_cell.row, first_cell.col,
+                        last_cell.row,  last_cell.col)
+        wks.update_cells(all_cells[i: i + cell_chunk])
+
     print("Cells used:", cell.row, cell.col)
 
     # Delete the UU-encoded file
-    remove(out_file)
+    #remove(out_file)
     print("All done! " + str(cell.row * cell.col) + " cells filled in Sheets.")
 
 
@@ -150,7 +169,7 @@ def sheetpost_get(worksheet, filename):
 
     print("Saved Sheets data to decode! Decoding now. Beep boop.")
     uu.decode(downfile, filename)
-    remove(downfile)
+    #remove(downfile)
     print("Data decoded! All done!")
 
 
@@ -173,7 +192,10 @@ To retrieve a sheetpost:
 if __name__ == '__main__':
     filename = 'XCHG.jpg'
     filename = 'learn_py.pdf'
-    filename = 'byte_python.pdf'
+    #filename = 'byte_python.pdf'
+    filename = 'lc16.pdf'
+    filename = 'algo18.chm'
+    filename = 'pjava22.pdf'
 
     spreadsheet = authorize_and_get_spreadsheet(filename + '_sheet')
     worksheet = spreadsheet.sheet1

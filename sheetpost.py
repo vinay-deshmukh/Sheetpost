@@ -65,31 +65,6 @@ def sheetpost_put(worksheet, filename):
     # Increse the range for larger files
     all_cells = sorted(wks.range(WKS_RANGE), key=lambda x: x.col)
 
-    i = 0
-    while True:
-        val = all_cells[i].value
-        if val == '':
-            print("End of original file contents")
-            break
-
-        # Clear cell
-        all_cells[i].value = ''
-        print("Wiping:", all_cells[i].row, all_cells[i].col)
-        i += 1
-    total_wipes = i + 1
-    # Update all the cells at once
-    '''
-    print('Size of value', len(all_cells[0].value))
-    wks.update_acell('A1', all_cells[0].value)
-    print('exit in put')
-    exit('EXIT in put')
-    '''
-
-    cell_chunk = 100 # 100 cells written per call
-    for i in range(0, total_wipes, cell_chunk):
-        print("Wipe:", i, i + cell_chunk)
-        wks.update_cells(all_cells[i: i + cell_chunk])
-
     # Get iterator over the file contents
     # chunk_size should be less than (50000-1)
     # since cell limit is 50000, and one character is used to prepend to data
@@ -190,9 +165,9 @@ if __name__ == '__main__':
     filename = 'XCHG.jpg'
     filename = 'learn_py.pdf'
     #filename = 'byte_python.pdf'
-    filename = 'lc16.pdf'
-    filename = 'algo18.chm'
-    filename = 'pjava22.pdf'
+    #filename = 'lc16.pdf'
+    #filename = 'algo18.chm'
+    #filename = 'pjava22.pdf'
 
     spreadsheet = authorize_and_get_spreadsheet(filename + '_sheet')
     worksheet = spreadsheet.sheet1

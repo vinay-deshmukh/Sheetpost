@@ -20,6 +20,8 @@ scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
 credentials = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
 
+WKS_RANGE = 'A1:B1000'
+
 def authorize_and_get_spreadsheet(sheet_name):
     try:
         gc = gspread.authorize(credentials)
@@ -48,13 +50,15 @@ def sheetpost_put(worksheet, filename):
     wks = worksheet
 
     # UU-encode the source file
-    uu.encode(filename, filename + ".out")
+    out_file = filename + '.out'
+    uu.encode(filename, out_file)
 
     print("Encoded file into uu format!")
 
-    with open(filename + ".out", "r") as uploadfile:
+    with open(out_file, "r") as uploadfile:
         encoded = uploadfile.read()
-    uploadfile.close()
+        print('Out file read')
+        print(encoded[:20])
 
     # Wipe the sheet of existing content.
     print("Wiping the existing data from the sheet.")
@@ -62,7 +66,7 @@ def sheetpost_put(worksheet, filename):
     column_sweep = 1
 
     # Increse the range for larger files
-    all_cells = sorted(wks.range('A1:B1000'), key=lambda x: x.col)
+    all_cells = sorted(wks.range(WKS_RANGE), key=lambda x: x.col)
 
     i = 1
     while True:
@@ -76,44 +80,38 @@ def sheetpost_put(worksheet, filename):
         i += 1
 
     # Update all the cells at once
-    wks.update_cells(sorted(all_cells, key=lambda x: x.row))
+    wks.update_cells(all_cells)
 
-    '''
-    while wks.cell(row_sweep, column_sweep).value != "":
-        if row_sweep == 1000:
-            row_sweep = 1
-            column_sweep += 1
-        wks.update_cell(row_sweep, column_sweep, "")
-        print("Wipe:", row_sweep, column_sweep)
-        row_sweep += 1
-    '''
-
-    # Write the chunks to Drive
-    cell = 1
-    column = 1
-    chunk = chunk_str(encoded, 49500)
+    # Get iterator over the file contents
+    # chunk_size should be less than (50000-1)
+    # since cell limit is 50000, and one character is used to prepend to data
+    chunk = chunk_str(encoded, chunk_size=49500)
 
     print("Writing the chunks to the sheet. This'll take a while. Get some coffee or something.")
-    for part in chunk:
-        if cell == 1000:
+    for i, part in enumerate(chunk):
+        '''if cell == 1000:
             print("Ran out of rows, adding a column.")
             cell = 1
             column += 1
+        '''
+        cell = all_cells[i]
+        cell.value = part
         # Add a ' to each line to avoid it being interpreted as a formula
+        print('Before prepend:', repr(cell.value[:20]))
         part = "'" + part
         # wks.update_cell(cell, column, part)
-        all_cells[cell + (column-1) * 1000].value = part
-        # Calculating index of cell
-        print("Write:", cell, column, "Part:", part[:20])
-        cell += 1
+        cell.value = part
+        # Using repr so '\n' is shown, and not interpreted as newline
+        print("Write:", cell.row, cell.col, "Part:", repr(cell.value[:20]))
+        #cell += 1
 
     # Update the edited cells
     wks.update_cells(all_cells)
-    print("Cells used:", cell, column)
+    print("Cells used:", cell.row, cell.col)
 
     # Delete the UU-encoded file
-    remove(filename + ".out")
-    print("All done! " + str(cell) + " cells filled in Sheets.")
+    remove(out_file)
+    print("All done! " + str(cell.row * cell.col) + " cells filled in Sheets.")
 
 
 # DOWNLOAD
@@ -130,34 +128,25 @@ def sheetpost_get(worksheet, filename):
     values_list = []
     values_final = []
 
-    # Trim out the extra single quotes
+    # Trim and read the data
+    all_cells = sorted(WKS_RANGE, key=lambda x: x.col)
+    i = 0
     while True:
-        val = wks.cell(row_sweep, column_sweep).value
-        print("Trim:", row_sweep, column_sweep, "Value:", val[:20])
-
-        if val == '':
-            print('Break:', row_sweep, column_sweep)
+        cell = all_cells[i]
+        value = cell.value
+        if value == '':
             break
+        # Remove the prepended "'"
+        value = value[1:]
+        print('Trim:', cell.row, cell.col, repr(cell.value[:20]))
+        values_final.append(value)
 
-        values_list = wks.col_values(column_sweep)
-        for value in values_list:
-            if value == '':
-                print("End reading")
-                break
-
-            if row_sweep > 1 and column != 1:
-                # dont trim for cell,col == 1,1
-                # Trim initial "'", put in there while writing
-                value = value[1:]
-            print('After Trim:', value[:20])
-            values_final += value
-        column_sweep += 1
-    values_final = "".join(values_final)
+        i += 1
+    values_final = ''.join(values_final)
 
     # Save to file
     with open(downfile, "w+") as recoverfile:
         recoverfile.write(values_final)
-    recoverfile.close()
 
     print("Saved Sheets data to decode! Decoding now. Beep boop.")
     uu.decode(downfile, filename)
@@ -182,7 +171,6 @@ To retrieve a sheetpost:
 # -------------------------------------------------------]]
 
 if __name__ == '__main__':
-    file_key = '1MT6l2bMJimjRdtqmZUDs3kOKxoOi3Wca8uB7C11SLDc'
     filename = 'XCHG.jpg'
     #filename = 'learn_py.pdf'
 

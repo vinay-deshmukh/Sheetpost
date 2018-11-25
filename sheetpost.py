@@ -97,7 +97,7 @@ def sheetpost_put(worksheet, filename):
         cell = all_cells[i]
         cell.value = part
         # Add a ' to each line to avoid it being interpreted as a formula
-        print('Before prepend:', repr(cell.value[:20]))
+        #print('Before prepend:', repr(cell.value[:20]))
         part = "'" + part
         # wks.update_cell(cell, column, part)
         cell.value = part
@@ -129,7 +129,7 @@ def sheetpost_get(worksheet, filename):
     values_final = []
 
     # Trim and read the data
-    all_cells = sorted(WKS_RANGE, key=lambda x: x.col)
+    all_cells = sorted(wks.range(WKS_RANGE), key=lambda x: x.col)
     i = 0
     while True:
         cell = all_cells[i]
@@ -172,7 +172,8 @@ To retrieve a sheetpost:
 
 if __name__ == '__main__':
     filename = 'XCHG.jpg'
-    #filename = 'learn_py.pdf'
+    filename = 'learn_py.pdf'
+    filename = 'byte_python.pdf'
 
     spreadsheet = authorize_and_get_spreadsheet(filename + '_sheet')
     worksheet = spreadsheet.sheet1

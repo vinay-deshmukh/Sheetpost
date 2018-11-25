@@ -25,11 +25,8 @@ WKS_RANGE = 'A1:B1000'
 def authorize_and_get_spreadsheet(sheet_name):
     try:
         gc = gspread.authorize(credentials)
-        try:
-            spread = gc.open(sheet_name)
-        except gspread.exceptions.SpreadsheetNotFound:
-            print("Creating new spreadsheet", sheet_name)
-            spread = gc.create(sheet_name)
+        print("Creating new spreadsheet", sheet_name)
+        spread = gc.create(sheet_name)
         print("Logged into Sheets!")
     except Exception as e:
         print('Exception\n', e)
